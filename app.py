@@ -2,12 +2,11 @@ from flask import Flask, render_template, Response, request, jsonify
 import cv2
 from measurement import process_frame
 import threading
+import os
 
 app = Flask(__name__)
 
-
 # Store camera index globally
-
 camera_index = 0
 cap = None
 cap_lock = threading.Lock()
@@ -84,6 +83,10 @@ def set_camera():
         cap = open_camera(camera_index)
     success = cap is not None and cap.isOpened()
     return jsonify({'success': success, 'camera_index': camera_index})
+
+# Vercel handler
+def handler(request):
+    return app(request.environ, lambda *args: None)
 
 if __name__ == "__main__":
     app.run(debug=True)
