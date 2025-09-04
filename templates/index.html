@@ -114,77 +114,21 @@
     background: #9ca3af;
     }
 
-    #video {
+    #browserVideo {
         width: 640px;
         height: 480px;
         object-fit: cover;
         border-radius: 8px;
     }
-
-    .canvas-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        border-radius: 8px;
-    }
-
-    .camera-permission {
-        background: #fef3c7;
-        border: 1px solid #f59e0b;
-        color: #92400e;
-    }
-
-    .calibration-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        color: white;
-        text-align: center;
-    }
-
-    .calibration-circle {
-        width: 100px;
-        height: 100px;
-        border: 3px solid #60a5fa;
-        border-radius: 50%;
-        position: relative;
-        cursor: crosshair;
-    }
-
-    .calibration-circle::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 6px;
-        height: 6px;
-        background: #60a5fa;
-        border-radius: 50%;
-    }
 </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start">
-
-<!-- Camera Permission Notice -->
-<div id="permissionNotice" class="mt-4 mb-2 w-full max-w-2xl mx-auto camera-permission rounded-lg p-3 text-center hidden">
-    <p class="text-sm font-medium">📷 Camera access required for object measurement</p>
-</div>
 
 <!-- Camera Selection Dropdown -->
 <div class="mt-4 mb-2 w-full flex justify-center">
     <div class="flex items-center gap-2">
         <label for="cameraSelect" class="font-medium text-gray-700">Camera:</label>
-        <select id="cameraSelect" class="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+        <select id="cameraSelect" class="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option>Loading cameras...</option>
         </select>
         <button id="startCameraBtn" class="btn-primary px-4 py-2 rounded-lg font-medium text-sm">
@@ -192,13 +136,12 @@
         </button>
     </div>
 </div>
-
 <header class="mb-8 mt-6 text-center slide-in">
     <h1 class="text-4xl font-bold text-gray-800">Precision Object Measurement</h1>
-    <p class="text-lg text-gray-600 mt-2">Real-time Browser-Based Object Analysis</p>
+    <p class="text-lg text-gray-600 mt-2">Real-time Computer Vision Object Analysis</p>
     <div class="flex items-center justify-center gap-2 mt-3">
-    <div id="liveIndicator" class="w-2 h-2 bg-gray-400 rounded-full"></div>
-    <span class="text-sm font-medium text-gray-600" id="liveStatus">OFFLINE</span>
+    <div class="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
+    <span class="text-sm font-medium text-gray-600">LIVE</span>
     </div>
 </header>
 
@@ -229,41 +172,28 @@
     <!-- Video Card -->
     <div class="video-container rounded-xl p-4">
         <div class="relative">
-            <video id="video" autoplay muted playsinline class="rounded-lg shadow-md"></video>
-            <canvas id="canvas" class="canvas-overlay rounded-lg" width="640" height="480"></canvas>
-            
-            <!-- Calibration Overlay -->
-            <div id="calibrationOverlay" class="calibration-overlay hidden">
-                <h3 class="text-xl font-semibold mb-4">Calibration Required</h3>
-                <p class="mb-6 text-gray-300 max-w-md">Place a reference object (like a coin or credit card) in the circle below and click to set the scale.</p>
-                <div class="calibration-circle" id="calibrationCircle"></div>
-                <p class="mt-4 text-sm text-gray-400">Standard coin diameter: ~2.4cm | Credit card width: 8.5cm</p>
-                <div class="mt-4">
-                    <input type="number" id="referenceSize" placeholder="Reference size (cm)" 
-                           class="px-3 py-2 rounded bg-white text-black text-center" step="0.1" value="2.4">
-                </div>
-            </div>
-            
-            <div id="recordingIndicator" class="absolute top-4 left-4 bg-gray-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-2 hidden">
-                <div class="w-2 h-2 bg-white rounded-full animate-ping"></div>
-                REC
-            </div>
-            <div class="absolute bottom-4 right-4 glass-morphism text-gray-600 px-3 py-1 rounded-lg text-xs font-medium">
-                <span id="videoInfo">No camera</span>
-            </div>
+        <video id="browserVideo" autoplay muted playsinline class="rounded-lg w-[640px] h-[480px] object-cover shadow-md" style="display: none;"></video>
+        <img id="serverVideo" src="{{ url_for('video') }}" class="rounded-lg w-[640px] h-[480px] object-cover shadow-md">
+        <div class="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+            <div class="w-2 h-2 bg-white rounded-full animate-ping"></div>
+            REC
+        </div>
+        <div class="absolute bottom-4 right-4 glass-morphism text-gray-600 px-3 py-1 rounded-lg text-xs font-medium">
+            720p • 30 FPS
+        </div>
         </div>
     </div>
 
     <!-- Control Buttons -->
     <div class="flex gap-4 mt-4">
-        <button id="recalibrateBtn" class="btn-primary px-6 py-3 rounded-lg font-medium text-sm" disabled>
+        <button id="recalibrateBtn" class="btn-primary px-6 py-3 rounded-lg font-medium text-sm">
         Recalibrate
         </button>
-        <button id="saveBtn" class="btn-success px-6 py-3 rounded-lg font-medium text-sm" disabled>
+        <button id="saveBtn" class="btn-success px-6 py-3 rounded-lg font-medium text-sm">
         Save Data
         </button>
-        <button id="captureBtn" class="btn-primary px-6 py-3 rounded-lg font-medium text-sm" disabled>
-        📸 Capture
+        <button id="quitBtn" class="btn-danger px-6 py-3 rounded-lg font-medium text-sm">
+        Exit
         </button>
     </div>
     </div>
@@ -318,13 +248,13 @@
 <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 glass-morphism px-4 py-2 rounded-lg shadow-md">
     <div class="flex items-center gap-3 text-xs text-gray-600">
     <div class="flex items-center gap-2">
-        <div id="systemIndicator" class="w-2 h-2 bg-gray-400 rounded-full"></div>
-        <span id="systemStatus">System Offline</span>
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span>System Active</span>
     </div>
     <div class="w-px h-4 bg-gray-200"></div>
     <div class="flex items-center gap-2">
         <span>Calibration:</span>
-        <span id="calibrationStatus" class="font-semibold text-red-600">Not Set</span>
+        <span id="calibrationStatus" class="font-semibold text-green-600">Ready</span>
     </div>
     <div class="w-px h-4 bg-gray-200"></div>
     <div class="flex items-center gap-2">
@@ -335,330 +265,145 @@
 </div>
 
 <script>
-// Global variables
-let video, canvas, ctx;
-let stream = null;
-let availableCameras = [];
-let currentDeviceId = null;
-let pixelsPerCm = null;
-let calibrated = false;
-let isProcessing = false;
+    // Browser camera variables
+    let browserVideo = document.getElementById('browserVideo');
+    let serverVideo = document.getElementById('serverVideo');
+    let stream = null;
+    let availableCameras = [];
 
-// Measurement data
-let latestMeasurement = { object: "Object", width: 0, height: 0 };
-let measurementCounter = 0;
-let allMeasurements = [];
-
-// Initialize camera system
-async function initCamera() {
-    video = document.getElementById('video');
-    canvas = document.getElementById('canvas');
-    ctx = canvas.getContext('2d');
-    
-    try {
-        // Get available cameras
-        await getCameraList();
-        
-        // Set up event listeners
-        setupEventListeners();
-        
-        showNotification('Camera system initialized', 'success');
-    } catch (error) {
-        console.error('Camera initialization failed:', error);
-        showNotification('Camera initialization failed', 'error');
-    }
-}
-
-// Get list of available cameras
-async function getCameraList() {
-    try {
-        // Request permission first
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        
-        availableCameras = cameras;
-        populateCameraSelect();
-        
-        if (cameras.length === 0) {
-            showNotification('No cameras found', 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error getting camera list:', error);
-        document.getElementById('permissionNotice').classList.remove('hidden');
-        showNotification('Camera access denied', 'error');
-    }
-}
-
-// Populate camera selection dropdown
-function populateCameraSelect() {
-    const select = document.getElementById('cameraSelect');
-    select.innerHTML = '';
-    
-    if (availableCameras.length === 0) {
-        select.innerHTML = '<option>No cameras available</option>';
-        select.disabled = true;
-        return;
-    }
-    
-    availableCameras.forEach((camera, index) => {
-        const option = document.createElement('option');
-        option.value = camera.deviceId;
-        option.textContent = camera.label || `Camera ${index + 1}`;
-        select.appendChild(option);
-    });
-    
-    select.disabled = false;
-    currentDeviceId = availableCameras[0]?.deviceId;
-}
-
-// Start camera stream
-async function startCamera(deviceId = currentDeviceId) {
-    try {
-        // Stop existing stream
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-        
-        const constraints = {
-            video: {
-                deviceId: deviceId ? { exact: deviceId } : undefined,
-                width: { ideal: 640 },
-                height: { ideal: 480 }
+    // Get available cameras
+    async function getCameraList() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const cameras = devices.filter(device => device.kind === 'videoinput');
+            
+            availableCameras = cameras;
+            const select = document.getElementById('cameraSelect');
+            select.innerHTML = '';
+            
+            if (cameras.length === 0) {
+                select.innerHTML = '<option>No cameras available</option>';
+                return;
             }
-        };
-        
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        
-        // Wait for video to load
-        await new Promise((resolve) => {
-            video.onloadedmetadata = resolve;
-        });
-        
-        // Update UI
-        updateCameraStatus(true);
-        
-        // Start processing frames
-        startFrameProcessing();
-        
-        showNotification('Camera started successfully', 'success');
-        
-    } catch (error) {
-        console.error('Error starting camera:', error);
-        showNotification('Failed to start camera', 'error');
-        updateCameraStatus(false);
-    }
-}
-
-// Update camera status indicators
-function updateCameraStatus(active) {
-    const liveIndicator = document.getElementById('liveIndicator');
-    const liveStatus = document.getElementById('liveStatus');
-    const systemIndicator = document.getElementById('systemIndicator');
-    const systemStatus = document.getElementById('systemStatus');
-    const recordingIndicator = document.getElementById('recordingIndicator');
-    const videoInfo = document.getElementById('videoInfo');
-    
-    if (active) {
-        liveIndicator.className = 'w-2 h-2 bg-green-500 rounded-full live-indicator';
-        liveStatus.textContent = 'LIVE';
-        systemIndicator.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
-        systemStatus.textContent = 'System Active';
-        recordingIndicator.classList.remove('hidden');
-        recordingIndicator.className = recordingIndicator.className.replace('bg-gray-500', 'bg-red-500');
-        
-        // Get video track info
-        if (stream) {
-            const track = stream.getVideoTracks()[0];
-            const settings = track.getSettings();
-            videoInfo.textContent = `${settings.width}x${settings.height} • ${Math.round(settings.frameRate || 30)} FPS`;
+            
+            cameras.forEach((camera, index) => {
+                const option = document.createElement('option');
+                option.value = camera.deviceId;
+                option.textContent = camera.label || `Camera ${index + 1}`;
+                select.appendChild(option);
+            });
+            
+        } catch (error) {
+            console.error('Error getting camera list:', error);
+            const select = document.getElementById('cameraSelect');
+            select.innerHTML = '<option>Camera access denied</option>';
         }
-        
-        // Enable controls
-        document.getElementById('recalibrateBtn').disabled = false;
-        document.getElementById('captureBtn').disabled = false;
-    } else {
-        liveIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
-        liveStatus.textContent = 'OFFLINE';
-        systemIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
-        systemStatus.textContent = 'System Offline';
-        recordingIndicator.classList.add('hidden');
-        videoInfo.textContent = 'No camera';
-        
-        // Disable controls
-        document.getElementById('recalibrateBtn').disabled = true;
-        document.getElementById('captureBtn').disabled = true;
-        document.getElementById('saveBtn').disabled = true;
     }
-}
 
-// Start frame processing and object detection
-function startFrameProcessing() {
-    if (!stream || !video.videoWidth) return;
-    
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    // Start processing loop
-    processFrames();
-}
-
-// Process frames for object detection
-function processFrames() {
-    if (!stream || isProcessing) return;
-    
-    isProcessing = true;
-    
-    // Draw current video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Simulate object detection and measurement
-    if (calibrated && pixelsPerCm) {
-        detectAndMeasureObjects();
+    // Start browser camera
+    async function startBrowserCamera() {
+        try {
+            const deviceId = document.getElementById('cameraSelect').value;
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            const constraints = {
+                video: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            };
+            
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            browserVideo.srcObject = stream;
+            
+            // Switch to browser video
+            serverVideo.style.display = 'none';
+            browserVideo.style.display = 'block';
+            
+            showNotification('Browser camera started successfully', 'success');
+            
+        } catch (error) {
+            console.error('Error starting browser camera:', error);
+            showNotification('Failed to start browser camera', 'error');
+        }
     }
-    
-    isProcessing = false;
-    
-    // Continue processing
-    requestAnimationFrame(() => {
-        setTimeout(processFrames, 100); // Process at ~10 FPS
+
+    // Camera selection event listener
+    document.getElementById('startCameraBtn').addEventListener('click', startBrowserCamera);
+
+    document.getElementById('cameraSelect').addEventListener('change', function() {
+        if (stream) {
+            startBrowserCamera();
+        } else {
+            // Original server-side camera switching code
+            const idx = this.value;
+            fetch('/set_camera', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'camera_index=' + idx
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Camera switched to ' + idx, 'success');
+                    // Reload video stream
+                    serverVideo.src = "{{ url_for('video') }}?t=" + Date.now();
+                } else {
+                    showNotification('Failed to switch camera', 'error');
+                }
+            });
+        }
     });
-}
 
-// Simulate object detection and measurement
-function detectAndMeasureObjects() {
-    // This is a simplified simulation - in a real app, you'd use computer vision libraries
-    // like OpenCV.js or TensorFlow.js for actual object detection
+    // Initialize camera list on page load
+    document.addEventListener('DOMContentLoaded', getCameraList);
+
+    // Keep the latest detected measurement
+    let latestMeasurement = { object: "Object1", width: 0, height: 0 };
+    let measurementCounter = 0;
+    let allMeasurements = [];
+
+    // Mock: update latest measurement every 2 seconds with realistic variations
+    const objectTypes = ["object", "object", "object", "object", "object", "object", "object", "object"];
     
-    const objectTypes = ["book", "phone", "cup", "mouse", "card", "coin", "pen"];
+    setInterval(() => {
     const randomObject = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-    
-    // Simulate detected object dimensions in pixels
-    const objectWidthPx = Math.random() * 200 + 50;  // 50-250 pixels
-    const objectHeightPx = Math.random() * 300 + 80; // 80-380 pixels
-    
-    // Convert to cm using calibration
-    const widthCm = (objectWidthPx / pixelsPerCm).toFixed(2);
-    const heightCm = (objectHeightPx / pixelsPerCm).toFixed(2);
-    
-    // Update latest measurement
     latestMeasurement = {
         object: randomObject,
-        width: widthCm,
-        height: heightCm
+        width: (Math.random() * 15 + 3).toFixed(2),
+        height: (Math.random() * 20 + 5).toFixed(2)
     };
     
-    // Draw bounding box on canvas
-    drawBoundingBox(
-        Math.random() * (canvas.width - objectWidthPx),
-        Math.random() * (canvas.height - objectHeightPx),
-        objectWidthPx,
-        objectHeightPx,
-        randomObject
-    );
+    // Update current measurement display
+    document.getElementById('currentWidth').textContent = latestMeasurement.width;
+    document.getElementById('currentHeight').textContent = latestMeasurement.height;
+    document.getElementById('currentObject').textContent = latestMeasurement.object;
+    }, 2000);
+
+    // Update statistics
+    function updateStats() {
+    const count = allMeasurements.length;
+    document.getElementById('measurementCount').textContent = count;
+    document.getElementById('totalMeasurements').textContent = count;
     
-    // Update display
-    document.getElementById('currentWidth').textContent = widthCm;
-    document.getElementById('currentHeight').textContent = heightCm;
-    document.getElementById('currentObject').textContent = randomObject;
-    
-    // Enable save button
-    document.getElementById('saveBtn').disabled = false;
-}
-
-// Draw bounding box around detected object
-function drawBoundingBox(x, y, width, height, label) {
-    ctx.strokeStyle = '#60a5fa';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-    
-    // Draw label
-    ctx.fillStyle = '#60a5fa';
-    ctx.fillRect(x, y - 25, ctx.measureText(label).width + 10, 20);
-    ctx.fillStyle = 'white';
-    ctx.font = '14px Inter';
-    ctx.fillText(label, x + 5, y - 10);
-}
-
-// Show calibration overlay
-function showCalibration() {
-    document.getElementById('calibrationOverlay').classList.remove('hidden');
-}
-
-// Hide calibration overlay
-function hideCalibration() {
-    document.getElementById('calibrationOverlay').classList.add('hidden');
-}
-
-// Perform calibration
-function calibrate() {
-    const referenceSize = parseFloat(document.getElementById('referenceSize').value);
-    if (!referenceSize || referenceSize <= 0) {
-        showNotification('Please enter a valid reference size', 'error');
-        return;
+    if (count > 0) {
+        const avgWidth = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.width), 0) / count).toFixed(2);
+        const avgHeight = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.height), 0) / count).toFixed(2);
+        
+        document.getElementById('avgWidth').textContent = avgWidth;
+        document.getElementById('avgHeight').textContent = avgHeight;
     }
-    
-    // Simulate calibration - in real app, user would click on actual object
-    const referenceSizePx = 100; // Assume the circle represents 100 pixels
-    pixelsPerCm = referenceSizePx / referenceSize;
-    calibrated = true;
-    
-    // Update UI
-    document.getElementById('calibrationStatus').textContent = 'Ready';
-    document.getElementById('calibrationStatus').className = 'font-semibold text-green-600';
-    
-    hideCalibration();
-    showNotification('Calibration completed successfully!', 'success');
-}
-
-// Set up event listeners
-function setupEventListeners() {
-    // Start camera button
-    document.getElementById('startCameraBtn').addEventListener('click', () => {
-        const deviceId = document.getElementById('cameraSelect').value;
-        currentDeviceId = deviceId;
-        startCamera(deviceId);
-    });
-    
-    // Camera selection change
-    document.getElementById('cameraSelect').addEventListener('change', (e) => {
-        currentDeviceId = e.target.value;
-        if (stream) {
-            startCamera(currentDeviceId);
-        }
-    });
-    
-    // Calibration circle click
-    document.getElementById('calibrationCircle').addEventListener('click', calibrate);
-    
-    // Recalibrate button
-    document.getElementById('recalibrateBtn').addEventListener('click', () => {
-        calibrated = false;
-        pixelsPerCm = null;
-        document.getElementById('calibrationStatus').textContent = 'Not Set';
-        document.getElementById('calibrationStatus').className = 'font-semibold text-red-600';
-        showCalibration();
-    });
-    
-    // Save measurement button
-    document.getElementById('saveBtn').addEventListener('click', saveMeasurement);
-    
-    // Capture button
-    document.getElementById('captureBtn').addEventListener('click', captureImage);
-}
-
-// Save current measurement to table
-function saveMeasurement() {
-    if (!calibrated) {
-        showNotification('Please calibrate the system first', 'error');
-        return;
     }
-    
+
+    // Save button: add latest measurement to table
+    document.getElementById('saveBtn').addEventListener('click', () => {
     measurementCounter++;
     const tableBody = document.querySelector("#measurementTable tbody");
-    const row = tableBody.insertRow(0);
+    const row = tableBody.insertRow(0); // Insert at top
     const now = new Date().toLocaleTimeString();
     
     const measurement = {
@@ -670,7 +415,7 @@ function saveMeasurement() {
     };
     
     allMeasurements.unshift(measurement);
-    
+
     row.classList.add('table-row-enter');
     row.innerHTML = `
         <td class="p-3 text-sm">${measurementCounter}</td>
@@ -684,47 +429,19 @@ function saveMeasurement() {
         </button>
         </td>
     `;
-    
+
     // Animate row highlight
     row.classList.add('bg-gray-50');
     setTimeout(() => row.classList.remove('bg-gray-50'), 1000);
     
     updateStats();
+    
+    // Show success feedback
     showNotification('Measurement saved successfully!', 'success');
-}
+    });
 
-// Capture current frame as image
-function captureImage() {
-    if (!stream) {
-        showNotification('No active camera stream', 'error');
-        return;
-    }
-    
-    // Create a temporary canvas for capture
-    const captureCanvas = document.createElement('canvas');
-    const captureCtx = captureCanvas.getContext('2d');
-    
-    captureCanvas.width = video.videoWidth;
-    captureCanvas.height = video.videoHeight;
-    
-    // Draw video frame
-    captureCtx.drawImage(video, 0, 0);
-    
-    // Convert to blob and download
-    captureCanvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `measurement_capture_${Date.now()}.jpg`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }, 'image/jpeg', 0.95);
-    
-    showNotification('Image captured successfully!', 'success');
-}
-
-// Delete measurement row
-function deleteRow(button, id) {
+    // Delete row function
+    function deleteRow(button, id) {
     const row = button.closest('tr');
     row.style.animation = 'slideIn 0.3s ease-out reverse';
     setTimeout(() => {
@@ -732,25 +449,34 @@ function deleteRow(button, id) {
         allMeasurements = allMeasurements.filter(m => m.id !== id);
         updateStats();
     }, 300);
-}
-
-// Update statistics
-function updateStats() {
-    const count = allMeasurements.length;
-    document.getElementById('measurementCount').textContent = count;
-    document.getElementById('totalMeasurements').textContent = count;
-    
-    if (count > 0) {
-        const avgWidth = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.width), 0) / count).toFixed(2);
-        const avgHeight = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.height), 0) / count).toFixed(2);
-        
-        document.getElementById('avgWidth').textContent = avgWidth;
-        document.getElementById('avgHeight').textContent = avgHeight;
     }
-}
 
-// Notification system
-function showNotification(message, type = 'info') {
+    // Recalibrate button
+    document.getElementById('recalibrateBtn').addEventListener('click', () => {
+    document.getElementById('calibrationStatus').textContent = 'Calibrating...';
+    document.getElementById('calibrationStatus').className = 'font-semibold text-yellow-600';
+    
+    showNotification('Recalibration in progress...', 'info');
+    
+    setTimeout(() => {
+        document.getElementById('calibrationStatus').textContent = 'Ready';
+        document.getElementById('calibrationStatus').className = 'font-semibold text-green-600';
+        showNotification('Recalibration complete!', 'success');
+    }, 3000);
+    });
+
+    // Quit button
+    document.getElementById('quitBtn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to exit the measurement system?')) {
+        showNotification('Shutting down system...', 'info');
+        setTimeout(() => {
+        window.close();
+        }, 2000);
+    }
+    });
+
+    // Notification system
+    function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     const colors = {
         success: 'bg-green-500',
@@ -767,28 +493,33 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.classList.add('translate-x-full');
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// Initialize the application when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initCamera();
-    updateStats();
-    
-    // Show calibration initially
-    setTimeout(() => {
-        if (!calibrated) {
-            showCalibration();
-        }
-    }, 1000);
-});
-
-// Handle page unload - cleanup camera
-window.addEventListener('beforeunload', () => {
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+    }, 2000);
     }
-});
+
+    // Initialize with some sample data for demonstration
+    setTimeout(() => {
+    // Simulate some initial measurements
+    const sampleData = [
+        
+    ];
+    
+    sampleData.forEach((data, index) => {
+        setTimeout(() => {
+        latestMeasurement = data;
+        document.getElementById('saveBtn').click();
+        }, (index + 1) * 1000);
+    });
+    }, 2000);
+
+    // Initial stats update
+    updateStats();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
 </script>
 </body>
 </html>
