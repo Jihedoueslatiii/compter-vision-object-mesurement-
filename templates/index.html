@@ -117,7 +117,17 @@
     </head>
     <body class="min-h-screen flex flex-col items-center justify-start">
 
-    <!-- Header -->
+    <!-- Camera Selection Dropdown -->
+    <div class="mt-4 mb-2 w-full flex justify-center">
+        <form id="cameraForm" class="flex items-center gap-2">
+            <label for="cameraSelect" class="font-medium text-gray-700">Camera:</label>
+            <select id="cameraSelect" name="camera_index" class="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {% for cam in cameras %}
+                    <option value="{{ cam }}" {% if cam == selected_camera %}selected{% endif %}>Camera {{ cam }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
     <header class="mb-8 mt-6 text-center slide-in">
         <h1 class="text-4xl font-bold text-gray-800">Precision Object Measurement</h1>
         <p class="text-lg text-gray-600 mt-2">Real-time Computer Vision Object Analysis</p>
@@ -246,6 +256,25 @@
     </div>
 
     <script>
+        // Camera selection logic
+        document.getElementById('cameraSelect').addEventListener('change', function() {
+            const idx = this.value;
+            fetch('/set_camera', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'camera_index=' + idx
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Camera switched to ' + idx, 'success');
+                    // Reload video stream
+                    document.querySelector('img[src*="/video"]').src = "{{ url_for('video') }}?t=" + Date.now();
+                } else {
+                    showNotification('Failed to switch camera', 'error');
+                }
+            });
+        });
         // Keep the latest detected measurement
         let latestMeasurement = { object: "Object1", width: 0, height: 0 };
         let measurementCounter = 0;
