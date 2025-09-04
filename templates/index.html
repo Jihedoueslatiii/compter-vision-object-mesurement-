@@ -1,0 +1,402 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Object Measurement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+        font-family: 'Inter', sans-serif;
+        background: #f7f9fc;
+        color: #1f2937;
+        }
+        
+        @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in { animation: slideIn 0.5s ease-out; }
+        
+        .glass-morphism {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .video-container {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .measurement-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .measurement-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+        background: #2563eb;
+        color: white;
+        transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-success {
+        background: #16a34a;
+        color: white;
+        }
+        
+        .btn-success:hover {
+        background: #15803d;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        
+        .btn-danger {
+        background: #dc2626;
+        color: white;
+        }
+        
+        .btn-danger:hover {
+        background: #b91c1c;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        
+        .table-row-enter {
+        animation: slideIn 0.5s ease-out;
+        }
+        
+        .live-indicator {
+        animation: pulse 2s infinite;
+        }
+        
+        .measurement-display {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+        }
+    </style>
+    </head>
+    <body class="min-h-screen flex flex-col items-center justify-start">
+
+    <!-- Header -->
+    <header class="mb-8 mt-6 text-center slide-in">
+        <h1 class="text-4xl font-bold text-gray-800">Precision Object Measurement</h1>
+        <p class="text-lg text-gray-600 mt-2">Real-time Computer Vision Object Analysis</p>
+        <div class="flex items-center justify-center gap-2 mt-3">
+        <div class="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
+        <span class="text-sm font-medium text-gray-600">LIVE</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex gap-6 w-[95%] max-w-[1400px] slide-in" style="animation-delay: 0.2s;">
+
+        <!-- Left: Video + Controls -->
+        <div class="flex flex-col flex-2 items-center gap-6">
+        
+        <!-- Current Measurement Display -->
+        <div class="measurement-display glass-morphism rounded-xl p-6 w-full max-w-md text-center">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800">Current Detection</h3>
+            <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-lg p-3 shadow-sm">
+                <div class="text-xl font-semibold text-gray-800" id="currentWidth">0.00</div>
+                <div class="text-sm text-gray-600">Width (cm)</div>
+            </div>
+            <div class="bg-white rounded-lg p-3 shadow-sm">
+                <div class="text-xl font-semibold text-gray-800" id="currentHeight">0.00</div>
+                <div class="text-sm text-gray-600">Height (cm)</div>
+            </div>
+            </div>
+            <div class="mt-3 text-sm text-gray-600">
+            Object: <span id="currentObject" class="font-semibold">Detecting...</span>
+            </div>
+        </div>
+        
+        <!-- Video Card -->
+        <div class="video-container rounded-xl p-4">
+            <div class="relative">
+            <img src="{{ url_for('video') }}" class="rounded-lg w-[640px] h-[480px] object-cover shadow-md">
+            <div class="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+                <div class="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                REC
+            </div>
+            <div class="absolute bottom-4 right-4 glass-morphism text-gray-600 px-3 py-1 rounded-lg text-xs font-medium">
+                720p • 30 FPS
+            </div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex gap-4 mt-4">
+            <button id="recalibrateBtn" class="btn-primary px-6 py-3 rounded-lg font-medium text-sm">
+            Recalibrate
+            </button>
+            <button id="saveBtn" class="btn-success px-6 py-3 rounded-lg font-medium text-sm">
+            Save Data
+            </button>
+            <button id="quitBtn" class="btn-danger px-6 py-3 rounded-lg font-medium text-sm">
+            Exit
+            </button>
+        </div>
+        </div>
+
+        <!-- Right: Measurements Table -->
+        <div class="measurement-card flex-1 p-6 rounded-xl max-h-[600px] overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold text-gray-800">Measurements Log</h2>
+            <div class="flex items-center gap-2 text-sm bg-gray-100 px-3 py-1 rounded-full">
+            <span id="measurementCount">0</span>
+            <span>entries</span>
+            </div>
+        </div>
+        
+        <div class="overflow-y-auto flex-1 custom-scrollbar">
+            <table id="measurementTable" class="w-full bg-white rounded-lg shadow-sm">
+            <thead class="bg-gray-100 text-gray-600 sticky top-0">
+                <tr>
+                <th class="p-3 text-left text-sm font-semibold">#</th>
+                <th class="p-3 text-left text-sm font-semibold">Object</th>
+                <th class="p-3 text-left text-sm font-semibold">Width (cm)</th>
+                <th class="p-3 text-left text-sm font-semibold">Height (cm)</th>
+                <th class="p-3 text-left text-sm font-semibold">Time</th>
+                <th class="p-3 text-left text-sm font-semibold">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 text-gray-700">
+                <!-- Rows added dynamically -->
+            </tbody>
+            </table>
+        </div>
+        
+        <!-- Table Footer Stats -->
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div class="bg-gray-100 rounded-lg p-3">
+            <div class="text-lg font-semibold text-gray-800" id="avgWidth">0.00</div>
+            <div class="text-xs text-gray-600">Avg Width</div>
+            </div>
+            <div class="bg-gray-100 rounded-lg p-3">
+            <div class="text-lg font-semibold text-gray-800" id="avgHeight">0.00</div>
+            <div class="text-xs text-gray-600">Avg Height</div>
+            </div>
+            <div class="bg-gray-100 rounded-lg p-3">
+            <div class="text-lg font-semibold text-gray-800" id="totalMeasurements">0</div>
+            <div class="text-xs text-gray-600">Total</div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 glass-morphism px-4 py-2 rounded-lg shadow-md">
+        <div class="flex items-center gap-3 text-xs text-gray-600">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>System Active</span>
+        </div>
+        <div class="w-px h-4 bg-gray-200"></div>
+        <div class="flex items-center gap-2">
+            <span>Calibration:</span>
+            <span id="calibrationStatus" class="font-semibold text-green-600">Ready</span>
+        </div>
+        <div class="w-px h-4 bg-gray-200"></div>
+        <div class="flex items-center gap-2">
+            <span>Accuracy:</span>
+            <span class="font-semibold text-blue-600">±0.1cm</span>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        // Keep the latest detected measurement
+        let latestMeasurement = { object: "Object1", width: 0, height: 0 };
+        let measurementCounter = 0;
+        let allMeasurements = [];
+
+        // Mock: update latest measurement every 2 seconds with realistic variations
+        const objectTypes = ["object", "object", "object", "object", "object", "object", "object", "object"];
+        
+        setInterval(() => {
+        const randomObject = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+        latestMeasurement = {
+            object: randomObject,
+            width: (Math.random() * 15 + 3).toFixed(2),
+            height: (Math.random() * 20 + 5).toFixed(2)
+        };
+        
+        // Update current measurement display
+        document.getElementById('currentWidth').textContent = latestMeasurement.width;
+        document.getElementById('currentHeight').textContent = latestMeasurement.height;
+        document.getElementById('currentObject').textContent = latestMeasurement.object;
+        }, 2000);
+
+        // Update statistics
+        function updateStats() {
+        const count = allMeasurements.length;
+        document.getElementById('measurementCount').textContent = count;
+        document.getElementById('totalMeasurements').textContent = count;
+        
+        if (count > 0) {
+            const avgWidth = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.width), 0) / count).toFixed(2);
+            const avgHeight = (allMeasurements.reduce((sum, m) => sum + parseFloat(m.height), 0) / count).toFixed(2);
+            
+            document.getElementById('avgWidth').textContent = avgWidth;
+            document.getElementById('avgHeight').textContent = avgHeight;
+        }
+        }
+
+        // Save button: add latest measurement to table
+        document.getElementById('saveBtn').addEventListener('click', () => {
+        measurementCounter++;
+        const tableBody = document.querySelector("#measurementTable tbody");
+        const row = tableBody.insertRow(0); // Insert at top
+        const now = new Date().toLocaleTimeString();
+        
+        const measurement = {
+            id: measurementCounter,
+            object: latestMeasurement.object,
+            width: latestMeasurement.width,
+            height: latestMeasurement.height,
+            time: now
+        };
+        
+        allMeasurements.unshift(measurement);
+
+        row.classList.add('table-row-enter');
+        row.innerHTML = `
+            <td class="p-3 text-sm">${measurementCounter}</td>
+            <td class="p-3 text-sm">${measurement.object}</td>
+            <td class="p-3 text-sm font-mono text-blue-600">${measurement.width}</td>
+            <td class="p-3 text-sm font-mono text-blue-600">${measurement.height}</td>
+            <td class="p-3 text-sm text-gray-500">${measurement.time}</td>
+            <td class="p-3">
+            <button onclick="deleteRow(this, ${measurementCounter})" class="text-red-500 hover:text-red-600 text-sm transition-colors">
+                Delete
+            </button>
+            </td>
+        `;
+
+        // Animate row highlight
+        row.classList.add('bg-gray-50');
+        setTimeout(() => row.classList.remove('bg-gray-50'), 1000);
+        
+        updateStats();
+        
+        // Show success feedback
+        showNotification('Measurement saved successfully!', 'success');
+        });
+
+        // Delete row function
+        function deleteRow(button, id) {
+        const row = button.closest('tr');
+        row.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => {
+            row.remove();
+            allMeasurements = allMeasurements.filter(m => m.id !== id);
+            updateStats();
+        }, 300);
+        }
+
+        // Recalibrate button
+        document.getElementById('recalibrateBtn').addEventListener('click', () => {
+        document.getElementById('calibrationStatus').textContent = 'Calibrating...';
+        document.getElementById('calibrationStatus').className = 'font-semibold text-yellow-600';
+        
+        showNotification('Recalibration in progress...', 'info');
+        
+        setTimeout(() => {
+            document.getElementById('calibrationStatus').textContent = 'Ready';
+            document.getElementById('calibrationStatus').className = 'font-semibold text-green-600';
+            showNotification('Recalibration complete!', 'success');
+        }, 3000);
+        });
+
+        // Quit button
+        document.getElementById('quitBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit the measurement system?')) {
+            showNotification('Shutting down system...', 'info');
+            setTimeout(() => {
+            window.close();
+            }, 2000);
+        }
+        });
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            info: 'bg-blue-500'
+        };
+        
+        notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-md transform translate-x-full transition-transform duration-300 z-50`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+        }
+
+        // Initialize with some sample data for demonstration
+        setTimeout(() => {
+        // Simulate some initial measurements
+        const sampleData = [
+            
+        ];
+        
+        sampleData.forEach((data, index) => {
+            setTimeout(() => {
+            latestMeasurement = data;
+            document.getElementById('saveBtn').click();
+            }, (index + 1) * 1000);
+        });
+        }, 2000);
+
+        // Initial stats update
+        updateStats();
+    </script>
+    </body>
+    </html>
